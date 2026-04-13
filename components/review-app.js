@@ -23,6 +23,7 @@ function escapeHtml(value) {
 export default function ReviewApp() {
   const iframeRef = useRef(null);
   const loadRequestRef = useRef(0);
+  const frameHrefRef = useRef("");
   const [url, setUrl] = useState("");
   const [frameSrc, setFrameSrc] = useState("");
   const [frameKey, setFrameKey] = useState(0);
@@ -121,6 +122,32 @@ export default function ReviewApp() {
     setActiveCard(id);
     sendToIframe({ __markupType: "HIGHLIGHT_PIN", id });
   }
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      const frameWindow = iframeRef.current?.contentWindow;
+      if (!frameWindow) return;
+
+      try {
+        const currentHref = frameWindow.location.href || "";
+        if (!currentHref || currentHref === "about:blank") return;
+
+        if (frameHrefRef.current !== currentHref) {
+          frameHrefRef.current = currentHref;
+          syncIframeMode(mode);
+          if (pins.length) {
+            sendToIframe({ __markupType: "LOAD_PINS", pins });
+          }
+        } else if (mode === "comment") {
+          syncIframeMode(mode);
+        }
+      } catch {}
+    }, 800);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [mode, pins]);
 
   return (
     <>
@@ -292,6 +319,12 @@ export default function ReviewApp() {
                 onLoad={() => {
                   setIsLoading(false);
                   setStatus(currentUrl ? `OK ${currentUrl}` : initialStatus);
+                  try {
+                    frameHrefRef.current =
+                      iframeRef.current?.contentWindow?.location?.href || "";
+                  } catch {
+                    frameHrefRef.current = "";
+                  }
                   syncIframeMode(mode);
                 }}
               />
