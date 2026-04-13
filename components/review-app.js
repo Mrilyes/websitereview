@@ -46,6 +46,13 @@ export default function ReviewApp() {
     } catch {}
   }
 
+  function syncIframeMode(nextMode = mode) {
+    sendToIframe({ __markupType: "SET_MODE", mode: nextMode });
+    setTimeout(() => {
+      sendToIframe({ __markupType: "SET_MODE", mode: nextMode });
+    }, 150);
+  }
+
   async function loadUrl() {
     const requestId = Date.now();
     loadRequestRef.current = requestId;
@@ -94,7 +101,7 @@ export default function ReviewApp() {
           ? `OK ${currentUrl}`
           : initialStatus,
     );
-    sendToIframe({ __markupType: "SET_MODE", mode: nextMode });
+    syncIframeMode(nextMode);
   }
 
   function togglePin(id, resolved) {
@@ -285,7 +292,7 @@ export default function ReviewApp() {
                 onLoad={() => {
                   setIsLoading(false);
                   setStatus(currentUrl ? `OK ${currentUrl}` : initialStatus);
-                  sendToIframe({ __markupType: "SET_MODE", mode });
+                  syncIframeMode(mode);
                 }}
               />
             </div>
@@ -294,7 +301,7 @@ export default function ReviewApp() {
       </div>
       <MessageBridge
         onIframeReady={() => {
-          sendToIframe({ __markupType: "SET_MODE", mode });
+          syncIframeMode(mode);
           if (pins.length) {
             sendToIframe({ __markupType: "LOAD_PINS", pins });
           }
