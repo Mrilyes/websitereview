@@ -22,6 +22,7 @@ function escapeHtml(value) {
 
 export default function ReviewApp() {
   const iframeRef = useRef(null);
+  const loadRequestRef = useRef(0);
   const [url, setUrl] = useState("");
   const [frameSrc, setFrameSrc] = useState("");
   const [frameKey, setFrameKey] = useState(0);
@@ -46,6 +47,8 @@ export default function ReviewApp() {
   }
 
   async function loadUrl() {
+    const requestId = Date.now();
+    loadRequestRef.current = requestId;
     let targetUrl = url.trim();
     if (!targetUrl) return;
     if (!/^https?:\/\//i.test(targetUrl)) {
@@ -67,6 +70,7 @@ export default function ReviewApp() {
         body: JSON.stringify({ url: targetUrl }),
       });
       const data = await response.json();
+      if (loadRequestRef.current !== requestId) return;
       if (!response.ok) {
         throw new Error(data.error || "Unable to create session");
       }
@@ -75,6 +79,7 @@ export default function ReviewApp() {
       setCurrentUrl(targetUrl);
       setFrameSrc(data.proxyPath);
     } catch (error) {
+      if (loadRequestRef.current !== requestId) return;
       setStatus(`Error: ${error.message}`);
       setIsLoading(false);
     }

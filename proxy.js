@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 
 function isPassthroughPath(pathname) {
   return (
-    pathname === "/" ||
     pathname.startsWith("/api") ||
     pathname.startsWith("/a") ||
     pathname.startsWith("/s/") ||
@@ -13,16 +12,26 @@ function isPassthroughPath(pathname) {
 
 export function proxy(request) {
   const { nextUrl, headers } = request;
+  const referer = headers.get("referer");
+  let refererUrl = null;
+
+  if (referer) {
+    try {
+      refererUrl = new URL(referer);
+    } catch {}
+  }
+
+  if (nextUrl.pathname === "/" && !refererUrl?.pathname.startsWith("/s/")) {
+    return NextResponse.next();
+  }
 
   if (isPassthroughPath(nextUrl.pathname)) {
     return NextResponse.next();
   }
 
-  const referer = headers.get("referer");
-  if (!referer) return NextResponse.next();
+  if (!refererUrl) return NextResponse.next();
 
   try {
-    const refererUrl = new URL(referer);
     const sessionMatch = refererUrl.pathname.match(/^\/s\/([a-f0-9]+)(\/.*)?$/);
     if (!sessionMatch) return NextResponse.next();
 
