@@ -23,6 +23,8 @@ function escapeHtml(value) {
 export default function ReviewApp() {
   const iframeRef = useRef(null);
   const [url, setUrl] = useState("");
+  const [frameSrc, setFrameSrc] = useState("");
+  const [frameKey, setFrameKey] = useState(0);
   const [mode, setMode] = useState("browse");
   const [status, setStatus] = useState(initialStatus);
   const [currentUrl, setCurrentUrl] = useState("");
@@ -55,6 +57,8 @@ export default function ReviewApp() {
     setStatus("Loading...");
     setPins([]);
     setActiveCard(null);
+    setFrameSrc("");
+    setFrameKey((value) => value + 1);
 
     try {
       const response = await fetch("/api/session", {
@@ -69,7 +73,7 @@ export default function ReviewApp() {
 
       setCurrentSessionId(data.id);
       setCurrentUrl(targetUrl);
-      iframeRef.current.src = data.proxyPath;
+      setFrameSrc(data.proxyPath);
     } catch (error) {
       setStatus(`Error: ${error.message}`);
       setIsLoading(false);
@@ -268,8 +272,10 @@ export default function ReviewApp() {
                 </div>
               )}
               <iframe
+                key={frameKey}
                 ref={iframeRef}
                 id="proxyFrame"
+                src={frameSrc}
                 sandbox="allow-scripts allow-forms allow-same-origin allow-pointer-lock allow-presentation allow-popups allow-popups-to-escape-sandbox"
                 onLoad={() => {
                   setIsLoading(false);
