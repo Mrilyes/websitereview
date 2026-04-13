@@ -1,4 +1,8 @@
-import { createSession } from "../../../lib/proxy-core";
+import { NextResponse } from "next/server";
+import {
+  createSession,
+  getSessionCookieDescriptor,
+} from "../../../lib/proxy-core";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,7 +19,11 @@ export async function POST(request) {
     } catch {
       return Response.json({ error: "Invalid url" }, { status: 400 });
     }
-    return Response.json(createSession(url));
+    const session = createSession(url);
+    const response = NextResponse.json(session);
+    const cookie = getSessionCookieDescriptor(session.id, url);
+    response.cookies.set(cookie.name, cookie.value, cookie.options);
+    return response;
   } catch {
     return Response.json({ error: "Invalid request body" }, { status: 400 });
   }

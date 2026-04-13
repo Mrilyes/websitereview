@@ -6,10 +6,12 @@ export const dynamic = "force-dynamic";
 export async function GET(request, { params }) {
   const slug = params.slug ?? [];
   const subPath = slug.length ? `/${slug.join("/")}` : "/";
+  const sessionCookie = request.cookies.get(`tr_session_${params.id}`)?.value;
   return handleSessionProxy({
     id: params.id,
     subPath,
     search: request.nextUrl.search || "",
     accept: request.headers.get("accept") || "",
+    sessionUrl: sessionCookie ? decodeURIComponent(sessionCookie) : null,
   });
 }
