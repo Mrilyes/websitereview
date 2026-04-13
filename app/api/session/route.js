@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   createSession,
+  getActiveSessionCookieDescriptor,
   getSessionCookieDescriptor,
 } from "../../../lib/proxy-core";
 
@@ -23,6 +24,12 @@ export async function POST(request) {
     const response = NextResponse.json(session);
     const cookie = getSessionCookieDescriptor(session.id, url);
     response.cookies.set(cookie.name, cookie.value, cookie.options);
+    const activeCookie = getActiveSessionCookieDescriptor(session.id, url);
+    response.cookies.set(
+      activeCookie.name,
+      activeCookie.value,
+      activeCookie.options,
+    );
     return response;
   } catch {
     return Response.json({ error: "Invalid request body" }, { status: 400 });

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+const ACTIVE_SESSION_COOKIE = "tr_active_session";
+
 function isPassthroughPath(pathname) {
   return (
     pathname.startsWith("/api") ||
@@ -10,8 +12,22 @@ function isPassthroughPath(pathname) {
   );
 }
 
+function readActiveSession(request) {
+  const raw = request.cookies.get(ACTIVE_SESSION_COOKIE)?.value;
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(decodeURIComponent(raw));
+    if (!parsed?.id || !parsed?.url) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 export function proxy(request) {
   const { nextUrl, headers } = request;
+  const activeSession = readActiveSession(request);
   const referer = headers.get("referer");
   let refererUrl = null;
 
@@ -27,6 +43,15 @@ export function proxy(request) {
 
   if (isPassthroughPath(nextUrl.pathname)) {
     return NextResponse.next();
+  }
+
+  if (activeSession) {
+    const rewritten = request.nextUrl.clone();
+    rewritten.pathname = `/s/${activeSession.id}${nextUrl.pathname}`;
+    if (!rewritten.searchParams.has("__session_url")) {
+      rewritten.searchParams.set("__session_url", activeSession.url);
+    }
+    return NextResponse.rewrite(rewritten);
   }
 
   if (!refererUrl) return NextResponse.next();
